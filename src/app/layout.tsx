@@ -43,23 +43,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <PresentationHUD />
           <ToastContainer />
-          <main className="ml-64 mt-14 min-h-[calc(100vh-3.5rem)]">
+          <main className="lg:ml-64 ml-0 mt-14 min-h-[calc(100vh-3.5rem)] overflow-x-hidden">
             {children}
           </main>
           {/* Footer */}
-          <footer className="ml-64 border-t border-cyan-500/10 bg-[#0d1117]/50 py-4 px-6">
-            <div className="flex items-center justify-between text-xs text-gray-500">
+          <footer className="lg:ml-64 ml-0 border-t border-cyan-500/10 bg-[#0d1117]/50 py-4 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-2 sm:gap-0">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-cyan-400">UrbanPulse</span>
                 <span>•</span>
-                <span>AI-Powered Mobile Urban Intelligence Platform</span>
+                <span className="truncate">AI-Powered Mobile Urban Intelligence</span>
               </div>
-              <div className="flex items-center gap-4">
-                <span>Smart India Hackathon 2026</span>
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+                <span>SIH 2026</span>
                 <span>•</span>
-                <span>Problem Statement 26124</span>
+                <span>PS-26124</span>
                 <span>•</span>
-                <span>Team UrbanPulse</span>
+                <span>BEL</span>
               </div>
             </div>
           </footer>

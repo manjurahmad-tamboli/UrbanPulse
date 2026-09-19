@@ -23,6 +23,10 @@ interface SimulationContextType {
   issues: UrbanIssue[];
   notifications: Notification[];
   toasts: ToastItem[];
+  // Mobile navigation
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (val: boolean) => void;
+  toggleMobileMenu: () => void;
   // Actions
   toggleSimulation: (val?: boolean) => void;
   togglePresentation: (val?: boolean) => void;
@@ -45,6 +49,11 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [scenarioActive, setScenarioActive] = useState(false);
   const [currentScenarioStep, setCurrentScenarioStep] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev);
+  }, []);
 
   const [buses, setBuses] = useState<Bus[]>(defaultBuses);
   const [issues, setIssues] = useState<UrbanIssue[]>(defaultIssues);
@@ -351,6 +360,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         issues,
         notifications,
         toasts,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
+        toggleMobileMenu,
         toggleSimulation,
         togglePresentation,
         startScenario,

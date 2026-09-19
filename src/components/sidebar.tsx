@@ -6,10 +6,11 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Bus, Brain, Map, AlertTriangle,
   BarChart3, Car, Settings, Layers, Rocket, Monitor,
-  Wifi, Server, Database, Activity, ShieldAlert,
+  Wifi, Server, Database, Activity, ShieldAlert, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { systemStatus } from '@/data/mock-data';
+import { useSimulation } from '@/context/simulation-context';
 
 const navItems = [
   { href: '/', label: 'Command Center', icon: LayoutDashboard },
@@ -28,60 +29,87 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { isMobileMenuOpen, setIsMobileMenuOpen } = useSimulation();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-[#0d1117]/95 backdrop-blur-xl border-r border-cyan-500/20 flex flex-col">
-      {/* Logo */}
-      <div className="p-5 border-b border-cyan-500/10">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-            <Activity className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white tracking-tight">
-              Urban<span className="text-cyan-400">Pulse</span>
-            </h1>
-            <p className="text-[10px] text-gray-500 tracking-widest uppercase">City Intelligence</p>
-          </div>
-        </Link>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href ||
-            (item.href !== '/' && pathname.startsWith(item.href));
-          const Icon = item.icon;
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen w-72 lg:w-64 bg-[#0d1117]/95 backdrop-blur-xl border-r border-cyan-500/20 flex flex-col transition-transform duration-300 ease-in-out',
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
+        {/* Logo */}
+        <div className="p-5 border-b border-cyan-500/10 flex items-center justify-between">
+          <Link
+            href="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+              <Activity className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight">
+                Urban<span className="text-cyan-400">Pulse</span>
+              </h1>
+              <p className="text-[10px] text-gray-500 tracking-widest uppercase">City Intelligence</p>
+            </div>
+          </Link>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+            aria-label="Close navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group relative',
-                isActive
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
-              )}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="activeNav"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-r-full"
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-              )}
-              <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-300')} />
-              <span className="truncate">{item.label}</span>
-              {item.href === '/ai-demo' && (
-                <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/30">
-                  DEMO
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href ||
+              (item.href !== '/' && pathname.startsWith(item.href));
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group relative',
+                  isActive
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-r-full"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <Icon className={cn('w-4 h-4 flex-shrink-0', isActive ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-300')} />
+                <span className="truncate">{item.label}</span>
+                {item.href === '/ai-demo' && (
+                  <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-cyan-500/20 text-cyan-400 rounded-full border border-cyan-500/30">
+                    DEMO
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
       {/* System Status */}
       <div className="p-4 border-t border-cyan-500/10 space-y-2.5">
@@ -113,5 +141,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
