@@ -413,7 +413,7 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
 
           {/* Quick Trigger Presets for SIH Presentation */}
           <div className="hidden sm:flex items-center gap-1.5 ml-2 pl-3 border-l border-gray-800">
-            <span className="text-[10px] text-gray-500 font-mono">TEST PRESETS:</span>
+            <span className="text-[10px] text-gray-500 font-mono">PRESETS:</span>
             <button
               onClick={() => triggerInstantDetection('pothole')}
               className="px-2 py-1 text-[10px] rounded-lg bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-500/40 font-semibold cursor-pointer transition-colors"
@@ -430,7 +430,7 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
               onClick={() => triggerInstantDetection('damaged_road')}
               className="px-2 py-1 text-[10px] rounded-lg bg-yellow-950/50 hover:bg-yellow-900/60 text-yellow-300 border border-yellow-500/40 font-semibold cursor-pointer transition-colors"
             >
-              + Road Damage
+              + School Children (Risk)
             </button>
           </div>
         </div>

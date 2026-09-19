@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Bus, Brain, Map, AlertTriangle,
   BarChart3, Car, Settings, Layers, Rocket, Monitor,
-  Wifi, Server, Database, Activity,
+  Wifi, Server, Database, Activity, ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { systemStatus } from '@/data/mock-data';
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/ai-demo', label: 'AI Detection Demo', icon: Brain },
   { href: '/road-health', label: 'Road Health Map', icon: Map },
   { href: '/issues', label: 'Detected Issues', icon: AlertTriangle },
+  { href: '/incidents', label: 'Incidents & ANPR', icon: ShieldAlert },
   { href: '/traffic', label: 'Traffic Intelligence', icon: Car },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/fleet', label: 'Fleet Management', icon: Monitor },

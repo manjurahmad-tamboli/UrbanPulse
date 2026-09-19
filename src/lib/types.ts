@@ -341,3 +341,57 @@ export const issueTypeIcons: Record<IssueType, string> = {
   road_incident: '🚨',
   pedestrian_risk: '🚶',
 };
+
+export type IncidentType = 'hit_and_run' | 'rash_driving' | 'wrong_way' | 'signal_jump';
+
+export interface Incident {
+  id: string;
+  type: IncidentType;
+  title: string;
+  offendingVehicle: {
+    makeModel: string;
+    color: string;
+    estimatedSpeed: number; // km/h
+    speedLimit: number; // km/h
+    vehicleClass: string;
+  };
+  licensePlate: string;
+  ocrConfidence: number; // 0 to 1
+  timestamp: string;
+  latitude: number;
+  longitude: number;
+  address: string;
+  status: 'under_investigation' | 'alert_dispatched' | 'police_acknowledged' | 'case_closed';
+  reportingBusId: string;
+  collaboratingBusId?: string; // Handoff bus
+  trackingDurationSec: number;
+  sha256EvidenceHash: string;
+  summary: string;
+}
+
+export interface ODFlow {
+  id: string;
+  originZone: string;
+  destinationZone: string;
+  vehicleVolumePerHour: number;
+  averageTravelTimeMin: number;
+  expectedDelayMin: number;
+  congestionIndex: 'low' | 'moderate' | 'high';
+  primaryBottleneck: string;
+}
+
+export interface SchoolZoneRisk {
+  id: string;
+  schoolName: string;
+  routeId: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  vulnerablePedestrianCount: number;
+  speedLimitKmH: number;
+  activeCrossingAlert: boolean;
+  zebraCrossingVisibility: number; // percentage
+  infrastructureStatus: 'needs_repainting' | 'good' | 'missing_signage';
+  busDriverAdvisory: string;
+}
+
