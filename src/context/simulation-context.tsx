@@ -41,6 +41,7 @@ interface SimulationContextType {
   verifyRepair: (issueId: string) => void;
   restartEdgeNode: (busId: string) => void;
   addNewDetection: (detection: Detection) => void;
+  addIssue: (issue: Omit<UrbanIssue, 'id' | 'firstDetected' | 'lastDetected' | 'sightings' | 'timeline'> & { id?: string }) => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -310,6 +311,36 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     });
   }, [addToast]);
 
+  // Action: Add New Issue (Manual / Citizen / Edge Report)
+  const addIssue = useCallback((issueData: Omit<UrbanIssue, 'id' | 'firstDetected' | 'lastDetected' | 'sightings' | 'timeline'> & { id?: string }) => {
+    const newId = issueData.id || `PH-${Math.floor(2050 + Math.random() * 800)}`;
+    const now = new Date().toISOString();
+    const newIssue: UrbanIssue = {
+      ...issueData,
+      id: newId,
+      firstDetected: now,
+      lastDetected: now,
+      sightings: 1,
+      timeline: [
+        {
+          id: `TL-${Date.now()}`,
+          timestamp: now,
+          type: 'detected',
+          description: `Defect reported: ${issueData.description || issueData.type.replace('_', ' ')}. Assigned to municipal queue.`,
+        }
+      ]
+    };
+
+    setIssues(prev => [newIssue, ...prev]);
+
+    addToast({
+      title: `New Issue Logged: #${newId}`,
+      message: `${issueData.type.replace('_', ' ').toUpperCase()} at ${issueData.address.split(',')[0]} added to municipal database.`,
+      type: 'warning',
+      actionUrl: `/issues/${newId}`,
+    });
+  }, [addToast]);
+
   // Real-time bus movement simulation loop
   useEffect(() => {
     if (!isSimulating) return;
@@ -380,6 +411,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         verifyRepair,
         restartEdgeNode,
         addNewDetection,
+        addIssue,
       }}
     >
       {children}

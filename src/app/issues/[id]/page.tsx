@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   issueTypeLabels, 
   severityBgColors, 
   statusColors, 
   statusLabels, 
-  issueTypeIcons,
+  issueTypeIcons, 
 } from '@/lib/types';
 import { 
   ArrowLeft, 
@@ -23,7 +23,13 @@ import {
   CheckCircle2,
   Info,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Printer,
+  X,
+  Building2,
+  QrCode,
+  Download
 } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
 import { useSimulation } from '@/context/simulation-context';
@@ -41,9 +47,10 @@ export default function IssueDetailsPage() {
   const issueId = params.id as string;
   const issue = issues.find(i => i.id === issueId) || issues[0];
 
-  const [assigned, setAssigned] = useState(issue.status === 'assigned');
-  const [repaired, setRepaired] = useState(issue.status === 'repaired' || issue.status === 'verified');
-  const [verified, setVerified] = useState(issue.status === 'verified');
+  const [assigned, setAssigned] = useState(issue?.status === 'assigned');
+  const [repaired, setRepaired] = useState(issue?.status === 'repaired' || issue?.status === 'verified');
+  const [verified, setVerified] = useState(issue?.status === 'verified');
+  const [showWorkOrder, setShowWorkOrder] = useState(false);
 
   if (!issue) {
     return (
@@ -77,6 +84,20 @@ export default function IssueDetailsPage() {
     setVerified(true);
     verifyRepair(issue.id);
   };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Calculate SLA based on severity
+  const slaDeadline = issue.severity === 'critical' 
+    ? '24 Hours (Emergency SLA)' 
+    : issue.severity === 'high' 
+    ? '48 Hours (High Priority SLA)' 
+    : '7 Days (Standard SLA)';
+
+  // Estimated repair cost in INR based on defect area
+  const estimatedCost = Math.round((issue.estimatedArea || 0.82) * 10500 + 1500);
 
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-white p-6 pt-24">
@@ -112,7 +133,7 @@ export default function IssueDetailsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className={cn(
               "px-3 py-1.5 rounded-full text-xs font-semibold border uppercase tracking-wider",
               severityBgColors[issue.severity]
@@ -125,6 +146,15 @@ export default function IssueDetailsPage() {
             )}>
               {statusLabels[issue.status]}
             </span>
+
+            {/* Export Work Order Button in Header */}
+            <button
+              onClick={() => setShowWorkOrder(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(245,158,11,0.15)] cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Official Work Order</span>
+            </button>
           </div>
         </div>
 
@@ -158,7 +188,7 @@ export default function IssueDetailsPage() {
 
                 {/* Telemetry Watermark */}
                 <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur px-2.5 py-1 rounded text-[10px] font-mono text-cyan-400 border border-cyan-500/30">
-                  GPS: {issue.latitude.toFixed(4)}, {issue.longitude.toFixed(4)}
+                  GPS: {issue.latitude.toFixed(4)}°N, {issue.longitude.toFixed(4)}°E
                 </div>
                 <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur px-2.5 py-1 rounded text-[10px] font-mono text-gray-400 border border-gray-800">
                   Detected by {issue.timeline[0]?.busId || 'BUS-042'}
@@ -217,6 +247,15 @@ export default function IssueDetailsPage() {
                 <ShieldCheck className="w-4 h-4" />
                 {verified ? 'Repair Verified (Score: 95/100)' : 'Run Bus AI Re-scan & Verify'}
               </button>
+
+              {/* Export Official Work Order Button */}
+              <button
+                onClick={() => setShowWorkOrder(true)}
+                className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-medium border text-sm cursor-pointer bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+              >
+                <FileText className="w-4 h-4 text-amber-400" />
+                <span>Export Official PWD Work Order (PDF / Print)</span>
+              </button>
             </div>
 
             {/* Details Card */}
@@ -225,7 +264,7 @@ export default function IssueDetailsPage() {
                 <Info className="w-4 h-4" /> Incident Metadata
               </h3>
               
-              <div className="space-y-3.5 text-xs">
+              <div className="space-y-3 text-xs">
                 <div className="flex justify-between pb-2.5 border-b border-white/5">
                   <span className="text-gray-400">Department</span>
                   <span className="text-gray-200 font-semibold">{issue.assignedDepartment}</span>
@@ -302,6 +341,211 @@ export default function IssueDetailsPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* OFFICIAL PWD WORK ORDER MODAL (PRINTABLE / PDF EXPORT) */}
+      <AnimatePresence>
+        {showWorkOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white text-gray-900 rounded-2xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative my-8 print:p-0 print:m-0 print:shadow-none"
+            >
+              {/* Modal Top Control Bar (Hidden in Print) */}
+              <div className="flex justify-between items-center pb-4 mb-6 border-b border-gray-200 print:hidden">
+                <div className="flex items-center gap-2 text-gray-600 text-xs font-mono">
+                  <Building2 className="w-4 h-4 text-cyan-600" />
+                  <span>KMC PWD Work Order Generator • Official Gov Document</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handlePrint}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" /> Print / Save as PDF
+                  </button>
+                  <button
+                    onClick={() => setShowWorkOrder(false)}
+                    className="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* PRINTABLE WORK ORDER DOCUMENT CONTAINER */}
+              <div id="work-order-document" className="space-y-6 text-gray-900 font-sans">
+                {/* Government Header */}
+                <div className="text-center border-b-2 border-gray-900 pb-4">
+                  <div className="text-xs font-bold tracking-widest text-gray-600 uppercase mb-1">
+                    Government of Maharashtra • Urban Development Department
+                  </div>
+                  <h1 className="text-2xl font-black uppercase tracking-wide text-gray-900">
+                    KOLHAPUR MUNICIPAL CORPORATION
+                  </h1>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700 mt-0.5">
+                    PUBLIC WORKS DEPARTMENT (ROAD MAINTENANCE & INFRASTRUCTURE CELL)
+                  </h2>
+                  <div className="inline-block px-3 py-1 bg-gray-100 border border-gray-300 rounded font-mono text-xs font-bold text-gray-800 mt-2">
+                    OFFICIAL EMERGENCY ROAD REPAIR WORK ORDER
+                  </div>
+                </div>
+
+                {/* Metadata Row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs">
+                  <div>
+                    <span className="text-gray-500 block uppercase text-[10px] font-semibold">Work Order No:</span>
+                    <span className="font-mono font-bold text-gray-900 text-sm">WO-KMC-2026-{issue.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block uppercase text-[10px] font-semibold">Issue Reference:</span>
+                    <span className="font-mono font-bold text-gray-900 text-sm">{issue.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block uppercase text-[10px] font-semibold">Date of Issuance:</span>
+                    <span className="font-semibold text-gray-900" suppressHydrationWarning>{formatDate(issue.firstDetected)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block uppercase text-[10px] font-semibold">SLA Repair Deadline:</span>
+                    <span className="font-bold text-red-600">{slaDeadline}</span>
+                  </div>
+                </div>
+
+                {/* Defect & Engineering Specifications */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-gray-300 pb-1 mb-3">
+                    1. Defect & Engineering Specifications
+                  </h3>
+                  <table className="w-full text-xs text-left border border-gray-200">
+                    <tbody>
+                      <tr className="border-b border-gray-200 bg-gray-50/50">
+                        <td className="p-2.5 font-semibold text-gray-600 w-1/3">Defect Classification:</td>
+                        <td className="p-2.5 font-bold text-gray-900 uppercase">{issueTypeLabels[issue.type]}</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <td className="p-2.5 font-semibold text-gray-600">Road / Ward Landmark:</td>
+                        <td className="p-2.5 text-gray-900 font-medium">{issue.address}</td>
+                      </tr>
+                      <tr className="border-b border-gray-200 bg-gray-50/50">
+                        <td className="p-2.5 font-semibold text-gray-600">GIS Coordinates:</td>
+                        <td className="p-2.5 font-mono text-gray-900">{issue.latitude.toFixed(4)}°N, {issue.longitude.toFixed(4)}°E (PostGIS Verified)</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <td className="p-2.5 font-semibold text-gray-600">Estimated Defect Area / Depth:</td>
+                        <td className="p-2.5 font-bold text-gray-900 font-mono">{issue.estimatedArea || 0.82} m² (Avg Depth: 65mm)</td>
+                      </tr>
+                      <tr className="border-b border-gray-200 bg-gray-50/50">
+                        <td className="p-2.5 font-semibold text-gray-600">Repair Standard Code:</td>
+                        <td className="p-2.5 text-gray-900">IRC:SP:98-2020 Hot Mix Bituminous Patch Repair with Emulsion Tack Coat</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 font-semibold text-gray-600">Sanctioned Estimate Cost:</td>
+                        <td className="p-2.5 font-bold text-gray-900">₹{estimatedCost.toLocaleString('en-IN')} INR (PWD Schedule of Rates 2025-26)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Execution & Contractor Assignment */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-gray-300 pb-1 mb-3">
+                    2. Assigned Execution Agency & Verification
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className="p-3 border border-gray-200 rounded-lg">
+                      <span className="text-gray-500 text-[10px] block uppercase font-semibold">Assigned Contractor:</span>
+                      <span className="font-bold text-gray-900 block mt-0.5">
+                        {issue.assignedTeam || 'Shree Sai Infrastructure Ltd.'}
+                      </span>
+                      <span className="text-[10px] text-gray-500">Contractor ID: PWD-MH09-402</span>
+                    </div>
+
+                    <div className="p-3 border border-gray-200 rounded-lg">
+                      <span className="text-gray-500 text-[10px] block uppercase font-semibold">Inspecting Surveillance Unit:</span>
+                      <span className="font-bold text-gray-900 block mt-0.5">
+                        {issue.timeline[0]?.busId || 'BUS-042'} (KMT City Bus)
+                      </span>
+                      <span className="text-[10px] text-gray-500">AI Confidence: {(issue.confidence * 100).toFixed(0)}%</span>
+                    </div>
+
+                    <div className="p-3 border border-gray-200 rounded-lg">
+                      <span className="text-gray-500 text-[10px] block uppercase font-semibold">Verification Requirement:</span>
+                      <span className="font-bold text-blue-700 block mt-0.5">
+                        Mandatory Bus AI Re-scan
+                      </span>
+                      <span className="text-[10px] text-gray-500">Post-repair target score ≥ 90/100</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Evidence Photo Slots */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-gray-300 pb-1 mb-3">
+                    3. Photographic Evidence & Audit Trail
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 text-center">
+                      <span className="text-[10px] font-bold text-gray-600 uppercase block mb-2">
+                        Before Repair (AI Dashcam Evidence Frame)
+                      </span>
+                      <div className="h-28 bg-gray-900 rounded flex flex-col items-center justify-center text-white text-[10px] font-mono relative overflow-hidden">
+                        <div className="w-24 h-12 border-2 border-red-500 rounded bg-red-950/40 flex items-center justify-center">
+                          <span className="text-red-400 font-bold">{issueTypeLabels[issue.type]}</span>
+                        </div>
+                        <span className="absolute bottom-1 left-2 text-[8px] text-gray-400">
+                          GPS: {issue.latitude.toFixed(4)}, {issue.longitude.toFixed(4)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="border border-dashed border-gray-300 rounded-lg p-3 text-center flex flex-col items-center justify-center min-h-[140px]">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1">
+                        After Repair Inspection Photo Slot
+                      </span>
+                      <span className="text-[9px] text-gray-400 italic max-w-xs">
+                        (To be photographed by Contractor & verified by Municipal AI bus pass before bill processing)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signatures & Certification Blocks */}
+                <div className="pt-4 border-t border-gray-300 grid grid-cols-3 gap-6 text-xs text-center">
+                  <div className="space-y-8">
+                    <div className="border-b border-gray-400 h-10" />
+                    <span className="font-semibold text-gray-800 block">Junior Engineer (Field)</span>
+                    <span className="text-[10px] text-gray-500 block">KMC PWD Ward No. 14</span>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="border-b border-gray-400 h-10" />
+                    <span className="font-semibold text-gray-800 block">Authorized Contractor</span>
+                    <span className="text-[10px] text-gray-500 block">Acceptance of SLA & Terms</span>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="border-b border-gray-400 h-10" />
+                    <span className="font-bold text-gray-900 block">Executive Engineer</span>
+                    <span className="text-[10px] text-gray-500 block">Kolhapur Municipal Corporation</span>
+                  </div>
+                </div>
+
+                {/* Security Footer & Digital Hash */}
+                <div className="pt-3 border-t border-gray-200 flex justify-between items-center text-[10px] font-mono text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5 text-gray-700" />
+                    <span>DIGITALLY SIGNED & DISPATCHED VIA URBANPULSE SMART CITY ENGINE</span>
+                  </div>
+                  <div>
+                    HASH: SHA256:{issue.id.replace('-', '')}9f82c4
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
