@@ -12,6 +12,7 @@ export interface ToastItem {
   message: string;
   type: 'info' | 'success' | 'warning' | 'critical';
   timestamp: string;
+  actionUrl?: string;
 }
 
 interface SimulationContextType {
@@ -211,6 +212,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       title: `Repair Logged — ${issueId}`,
       message: `Road maintenance completed. Awaiting next bus pass for AI verification.`,
       type: 'info',
+      actionUrl: `/issues/${issueId}`,
     });
   }, [addToast]);
 
@@ -242,6 +244,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       title: `Repair Verified — ${issueId}`,
       message: `AI re-scan confirmed pothole eliminated! Road Health Score: 42 → 95`,
       type: 'success',
+      actionUrl: `/issues/${issueId}`,
     });
   }, [addToast]);
 
@@ -264,6 +267,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       title: `Edge Node Rebooted — ${busId}`,
       message: `Jetson Orin Nano on ${busId} restarted. TensorRT RoadVision v3.2.1 reloaded.`,
       type: 'success',
+      actionUrl: '/fleet',
     });
   }, [addToast]);
 
@@ -302,6 +306,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       title: `Pothole Detected by ${detection.busId}`,
       message: `Confidence: ${(detection.confidence * 100).toFixed(0)}% • Route ${detection.routeId} • Merged with #${detection.issueId}`,
       type: 'warning',
+      actionUrl: `/issues/${detection.issueId}`,
     });
   }, [addToast]);
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Presentation, Play, RotateCcw, ChevronRight,
@@ -10,8 +11,10 @@ import {
 import { cn, formatTime } from '@/lib/utils';
 import { scenarioSteps } from '@/lib/simulation';
 import { useSimulation } from '@/context/simulation-context';
+import type { Notification } from '@/lib/types';
 
 export default function Header() {
+  const router = useRouter();
   const {
     isSimulating,
     isPresentationMode,
@@ -31,6 +34,38 @@ export default function Header() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const unreadCount = localNotifications.filter(n => !n.read).length;
+
+  const handleNotificationClick = (notif: Notification) => {
+    // 1. Mark as read
+    setLocalNotifications(prev =>
+      prev.map(n => (n.id === notif.id ? { ...n, read: true } : n))
+    );
+    // 2. Close notifications dropdown
+    setShowNotifications(false);
+
+    // 3. Navigate directly to that notification problem
+    if (notif.actionUrl) {
+      router.push(notif.actionUrl);
+    } else if (notif.issueId) {
+      if (notif.issueId.startsWith('INC-')) {
+        router.push('/incidents');
+      } else if (notif.issueId.startsWith('TC-')) {
+        router.push('/traffic');
+      } else {
+        router.push(`/issues/${notif.issueId}`);
+      }
+    } else if (notif.busId) {
+      router.push('/live-monitor');
+    } else if (notif.type === 'congestion') {
+      router.push('/traffic');
+    } else if (notif.type === 'fleet') {
+      router.push('/fleet');
+    } else if (notif.type === 'system') {
+      router.push('/architecture');
+    } else {
+      router.push('/issues');
+    }
+  };
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -183,7 +218,7 @@ export default function Header() {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="absolute right-0 top-12 w-96 max-h-[70vh] bg-[#111827] border border-cyan-500/20 rounded-xl shadow-2xl overflow-hidden z-50"
+                className="absolute right-0 top-12 w-[calc(100vw-32px)] sm:w-96 max-h-[75vh] bg-[#111827] border border-cyan-500/30 rounded-xl shadow-2xl overflow-hidden z-50"
               >
                 <div className="p-3 border-b border-cyan-500/10 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-white">Notifications</h3>
@@ -203,21 +238,32 @@ export default function Header() {
                   {localNotifications.map((notif) => (
                     <div
                       key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
                       className={cn(
-                        'p-3 border-b border-gray-800/50 hover:bg-white/5 transition-colors cursor-pointer',
+                        'p-3 border-b border-gray-800/50 hover:bg-cyan-500/10 transition-colors cursor-pointer group',
                         !notif.read && 'bg-cyan-500/5'
                       )}
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2.5">
                         {severityIcon(notif.severity)}
                         <div className="flex-1 min-w-0">
-                          <p className={cn('text-xs font-medium', !notif.read ? 'text-white' : 'text-gray-300')}>
-                            {notif.title}
-                          </p>
+                          <div className="flex items-center justify-between gap-1">
+                            <p className={cn('text-xs font-medium group-hover:text-cyan-400 transition-colors', !notif.read ? 'text-white' : 'text-gray-300')}>
+                              {notif.title}
+                            </p>
+                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                          </div>
                           <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-[10px] text-gray-600 mt-1" suppressHydrationWarning>
-                            {formatTime(notif.timestamp)}
-                          </p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <p className="text-[10px] text-gray-500" suppressHydrationWarning>
+                              {formatTime(notif.timestamp)}
+                            </p>
+                            {(notif.issueId || notif.busId) && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/60 text-cyan-400">
+                                {notif.issueId || notif.busId}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {!notif.read && <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1 flex-shrink-0" />}
                       </div>
