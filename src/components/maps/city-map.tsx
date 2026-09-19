@@ -53,7 +53,7 @@ export default function CityMap({ buses: propBuses, urbanIssues: propIssues }: C
   if (!mounted) {
     return (
       <div className="w-full h-full min-h-[500px] bg-[#111827] rounded-xl flex items-center justify-center animate-pulse border border-cyan-500/20">
-        <span className="text-cyan-400 font-mono text-sm">Initializing CartoDB Dark Matter City Map...</span>
+        <span className="text-cyan-400 font-mono text-sm">Initializing City Transit Map...</span>
       </div>
     );
   }
@@ -67,8 +67,9 @@ export default function CityMap({ buses: propBuses, urbanIssues: propIssues }: C
         zoomControl={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a> • OpenStreetMap'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className="dark-map-tiles"
         />
 
         {/* Transit Routes */}
