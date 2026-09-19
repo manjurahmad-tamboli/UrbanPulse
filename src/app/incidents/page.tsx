@@ -9,7 +9,7 @@ import {
 import { mockIncidents } from '@/data/mock-data';
 import { useSimulation } from '@/context/simulation-context';
 import type { Incident, IncidentType } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 
 export default function IncidentsPage() {
   const { addToast } = useSimulation();
@@ -227,8 +227,8 @@ export default function IncidentsPage() {
                       </span>
                       <span className="font-mono text-xs text-gray-400">{incident.id}</span>
                     </div>
-                    <span className="text-[11px] text-gray-400 font-mono">
-                      {new Date(incident.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="text-[11px] text-gray-400 font-mono" suppressHydrationWarning>
+                      {formatTime(incident.timestamp)}
                     </span>
                   </div>
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { dashboardStats } from '@/data/mock-data';
 import { useSimulation } from '@/context/simulation-context';
+import { formatTime } from '@/lib/utils';
 
 const CityMap = dynamic(() => import('@/components/maps/city-map'), { ssr: false });
 
@@ -251,7 +252,7 @@ export default function Home() {
                       <div className="flex-grow min-w-0">
                         <div className="flex justify-between items-start mb-1">
                           <h4 className="font-semibold text-sm capitalize text-gray-200 truncate">{issue.title || issue.type.replace('_', ' ')}</h4>
-                          <span className="text-[11px] text-gray-400 font-mono">{new Date(issue.lastDetected).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                          <span className="text-[11px] text-gray-400 font-mono" suppressHydrationWarning>{formatTime(issue.lastDetected)}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-gray-400">
                           <span className="flex items-center gap-1 font-mono text-cyan-300">

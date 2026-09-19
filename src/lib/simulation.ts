@@ -3,6 +3,7 @@
 
 import { buses, routes, urbanIssues, notifications as defaultNotifications } from '@/data/mock-data';
 import type { Bus, Detection, Notification, UrbanIssue } from '@/lib/types';
+import { formatDate, formatTime } from '@/lib/utils';
 
 // Scenario steps for the 15-step demo
 export const scenarioSteps = [
@@ -162,14 +163,7 @@ export function generateNotification(type: Notification['type'], issueId?: strin
 
 // Format timestamp for display
 export function formatTimestamp(ts: string): string {
-  const date = new Date(ts);
-  return date.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return `${formatDate(ts)} ${formatTime(ts)}`;
 }
 
 export function formatRelativeTime(ts: string): string {

@@ -7,6 +7,7 @@ import { MapPin, Clock, Truck, ShieldAlert, CheckCircle, ExternalLink, Calendar,
 import { useSimulation } from '@/context/simulation-context';
 import type { UrbanIssue, Detection } from '@/lib/types';
 import { urbanIssues } from '@/data/mock-data';
+import { formatDate } from '@/lib/utils';
 
 interface EvidenceCardProps {
   issue?: UrbanIssue;
@@ -128,7 +129,7 @@ export default function EvidenceCard({
           <div className="text-gray-500 mb-0.5 flex items-center gap-1">
             <Calendar className="w-3 h-3 text-cyan-400" /> Detected
           </div>
-          <div className="text-gray-200 font-medium">{new Date(issue.lastDetected).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+          <div className="text-gray-200 font-medium" suppressHydrationWarning>{formatDate(issue.lastDetected)}</div>
         </div>
         <div>
           <div className="text-gray-500 mb-0.5 flex items-center gap-1">

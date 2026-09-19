@@ -7,7 +7,7 @@ import {
   X, AlertTriangle, CheckCircle, Info, Bus, Wifi,
   Maximize2, Minimize2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { scenarioSteps } from '@/lib/simulation';
 import { useSimulation } from '@/context/simulation-context';
 
@@ -190,8 +190,8 @@ export default function Header() {
                             {notif.title}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-[10px] text-gray-600 mt-1">
-                            {new Date(notif.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          <p className="text-[10px] text-gray-600 mt-1" suppressHydrationWarning>
+                            {formatTime(notif.timestamp)}
                           </p>
                         </div>
                         {!notif.read && <div className="w-2 h-2 rounded-full bg-cyan-400 mt-1 flex-shrink-0" />}

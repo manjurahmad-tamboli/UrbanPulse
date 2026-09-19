@@ -191,7 +191,7 @@ export default function LiveMonitorPage() {
 
                       <div className="flex justify-between items-center pt-3 border-t border-white/5 text-xs text-gray-500">
                         <span>{bus.detectionsToday} detections today</span>
-                        <span>Sync: {new Date(bus.lastSync).toLocaleTimeString()}</span>
+                        <span suppressHydrationWarning>Sync: {bus.lastSync}</span>
                       </div>
                     </motion.div>
                   );

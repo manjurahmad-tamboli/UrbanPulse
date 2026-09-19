@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { buses as defaultBuses, urbanIssues as defaultIssues, notifications as defaultNotifications, routes } from '@/data/mock-data';
 import { scenarioSteps, generateNotification, generateSimulatedDetection, interpolateBusPosition } from '@/lib/simulation';
 import type { Bus, UrbanIssue, Notification, Detection } from '@/lib/types';
+import { formatTime } from '@/lib/utils';
 
 export interface ToastItem {
   id: string;
@@ -55,7 +56,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     const newToast: ToastItem = {
       ...toast,
       id: `toast-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: formatTime(new Date()),
     };
     setToasts(prev => [newToast, ...prev.slice(0, 4)]); // keep max 5 toasts
 

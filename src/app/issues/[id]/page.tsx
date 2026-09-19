@@ -25,7 +25,7 @@ import {
   Check,
   AlertTriangle
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { useSimulation } from '@/context/simulation-context';
 
 const MiniMapComponent = dynamic(
@@ -244,11 +244,11 @@ export default function IssueDetailsPage() {
                 </div>
                 <div className="flex justify-between pb-2.5 border-b border-white/5">
                   <span className="text-gray-400">First Detected</span>
-                  <span className="text-gray-200">{new Date(issue.firstDetected).toLocaleDateString()}</span>
+                  <span className="text-gray-200" suppressHydrationWarning>{formatDate(issue.firstDetected)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Last Detected</span>
-                  <span className="text-gray-200">{new Date(issue.lastDetected).toLocaleDateString()}</span>
+                  <span className="text-gray-200" suppressHydrationWarning>{formatDate(issue.lastDetected)}</span>
                 </div>
               </div>
             </div>
@@ -286,9 +286,9 @@ export default function IssueDetailsPage() {
                 <div className="bg-white/5 border border-white/5 rounded-xl p-4 ml-4">
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-medium text-gray-200 text-sm">{event.description}</span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <span className="text-xs text-gray-400 flex items-center gap-1" suppressHydrationWarning>
                       <Calendar className="w-3 h-3 text-cyan-400" />
-                      {new Date(event.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(event.timestamp)}
                     </span>
                   </div>
                   {event.busId && (
