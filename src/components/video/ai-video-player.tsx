@@ -64,6 +64,7 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [webcamSnapshot, setWebcamSnapshot] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   // Active detected anomaly details
   const [currentAnomaly, setCurrentAnomaly] = useState<DetectedAnomaly | null>(null);
@@ -74,6 +75,7 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const webcamVideoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const phoneCameraInputRef = useRef<HTMLInputElement>(null);
   const webcamStreamRef = useRef<MediaStream | null>(null);
   const requestRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
@@ -91,19 +93,24 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
     setIsWebcamActive(false);
   }, []);
 
-  // Start webcam
-  const startWebcam = async () => {
+  // Start webcam with specified or current facingMode
+  const startWebcam = async (overrideFacingMode?: 'environment' | 'user') => {
     setWebcamError(null);
     setWebcamSnapshot(null);
     setDefectDetected(false);
     setCurrentAnomaly(null);
+    const mode = overrideFacingMode || facingMode;
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Webcam API is not supported on this device/browser.');
+        throw new Error('Live camera stream not supported or restricted (use Phone Camera button below).');
+      }
+      if (webcamStreamRef.current) {
+        webcamStreamRef.current.getTracks().forEach(track => track.stop());
+        webcamStreamRef.current = null;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          facingMode: { ideal: 'environment' },
+          facingMode: { ideal: mode },
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
@@ -115,8 +122,8 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
       }
       setIsWebcamActive(true);
       addToast({
-        title: 'Device Camera Connected',
-        message: 'Live camera feed ready. Point at road surface to test AI inference.',
+        title: `${mode === 'environment' ? 'Rear (Road)' : 'Front'} Camera Connected`,
+        message: 'Live feed active. Point at road surface to test AI inference.',
         type: 'info',
       });
     } catch (err: any) {
@@ -124,11 +131,61 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
       setWebcamError(err.message || 'Camera permission denied or camera not found.');
       setIsWebcamActive(false);
       addToast({
-        title: 'Camera Access Unavailable',
-        message: 'Could not access webcam. You can use sample photos or upload an image/video.',
+        title: 'Camera Access Restricted',
+        message: 'Tap "📸 Snap with Phone Camera" below to use your device camera directly.',
         type: 'warning',
       });
     }
+  };
+
+  // Toggle between rear and front camera on mobile/tablets
+  const toggleCameraFacing = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    startWebcam(nextMode);
+  };
+
+  // Direct Phone Camera Native Shutter Handler
+  const handlePhoneCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setWebcamSnapshot(url);
+    setIsAnalyzing(true);
+    setDefectDetected(false);
+    setCurrentAnomaly(null);
+    stopWebcam();
+
+    addToast({
+      title: 'Phone Photo Captured',
+      message: 'Running RoadVision YOLOv8s pixel inference on phone camera photo...',
+      type: 'info',
+    });
+
+    const img = new Image();
+    img.onload = () => {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = img.width || 640;
+      offscreen.height = img.height || 480;
+      const ctx = offscreen.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+        setTimeout(() => {
+          const anomaly = performVisionInference(offscreen, selectedInspectionMode);
+          setCurrentAnomaly(anomaly);
+          setIsAnalyzing(false);
+          setDefectDetected(true);
+          onDetection(anomaly);
+
+          addToast({
+            title: `${anomaly.label} Detected!`,
+            message: `Accuracy: ${(anomaly.confidence * 100).toFixed(1)}% • Area: ${anomaly.area} m² • Localized at [${anomaly.box.x}%, ${anomaly.box.y}%]`,
+            type: anomaly.type === 'healthy' ? 'success' : 'warning',
+          });
+        }, 1400);
+      }
+    };
+    img.src = url;
   };
 
   // Switch tabs & manage resources
@@ -877,6 +934,15 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
         accept="video/mp4,video/webm,image/jpeg,image/png,image/webp"
         className="hidden"
       />
+      {/* Hidden Mobile Phone Direct Camera Input */}
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        ref={phoneCameraInputRef}
+        onChange={handlePhoneCameraCapture}
+        className="hidden"
+      />
 
       {/* 3-Mode Selection Tabs */}
       <div className="flex border-b border-cyan-500/20 bg-gray-900/60 overflow-x-auto">
@@ -1153,21 +1219,27 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
                 </div>
                 <h4 className="text-sm font-bold text-white mb-1">Camera Stream Unavailable</h4>
                 <p className="text-xs text-gray-400 mb-4">{webcamError}</p>
-                <div className="flex items-center justify-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
                   <button
-                    onClick={startWebcam}
-                    className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded-xl border border-cyan-500/40 transition-colors cursor-pointer flex items-center gap-1.5"
+                    onClick={() => phoneCameraInputRef.current?.click()}
+                    className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold text-xs rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] flex items-center gap-1.5 cursor-pointer"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" /> Retry Camera
+                    <Camera className="w-3.5 h-3.5" /> 📸 Open Phone Camera Directly
+                  </button>
+                  <button
+                    onClick={() => startWebcam()}
+                    className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded-xl border border-cyan-500/40 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry Stream
                   </button>
                   <button
                     onClick={() => {
                       setActiveTab('upload');
                       loadSamplePotholePhoto();
                     }}
-                    className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs rounded-xl border border-amber-500/40 transition-colors cursor-pointer"
+                    className="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs rounded-xl border border-amber-500/40 transition-colors cursor-pointer"
                   >
-                    Use Sample Photo Instead
+                    Use Sample Photo
                   </button>
                 </div>
               </div>
@@ -1260,10 +1332,20 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
                 {/* Camera HUD Overlays */}
                 <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 text-[11px] font-mono text-cyan-400 flex items-center gap-2 z-10">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                  LIVE CAMERA INFERENCE • 1080P
+                  LIVE CAMERA • 1080P
                 </div>
 
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+                {/* Flip Camera Toggle for Mobile / Laptop */}
+                <button
+                  onClick={toggleCameraFacing}
+                  className="absolute top-3 right-3 bg-black/80 hover:bg-black backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20 text-[11px] font-mono text-cyan-300 hover:text-white flex items-center gap-1.5 z-10 transition-colors cursor-pointer"
+                  title="Toggle Rear (Road) / Front Camera"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>{facingMode === 'environment' ? 'Rear Cam (Road)' : 'Front Cam'}</span>
+                </button>
+
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20 w-full px-4 justify-center">
                   {webcamSnapshot ? (
                     <button
                       onClick={() => {
@@ -1278,12 +1360,22 @@ export default function AIVideoPlayer({ onDetection }: AIVideoPlayerProps) {
                       <RefreshCw className="w-3.5 h-3.5" /> Return to Live Camera
                     </button>
                   ) : (
-                    <button
-                      onClick={captureWebcamFrame}
-                      className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.5)] border border-red-400"
-                    >
-                      <Scan className="w-4 h-4" /> Capture & Run YOLO Inference
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                      <button
+                        onClick={captureWebcamFrame}
+                        className="px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.5)] border border-red-400"
+                      >
+                        <Scan className="w-4 h-4" /> Capture & Run YOLO Inference
+                      </button>
+                      <button
+                        onClick={() => phoneCameraInputRef.current?.click()}
+                        className="px-3.5 py-2.5 bg-gray-900/90 hover:bg-gray-800 text-cyan-300 rounded-xl text-xs font-semibold border border-cyan-500/40 transition-all cursor-pointer flex items-center gap-1.5 shadow-lg"
+                        title="Open Phone Native Camera Shutter"
+                      >
+                        <Camera className="w-4 h-4 text-cyan-400" />
+                        <span>📸 Snap with Phone Camera</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </>
