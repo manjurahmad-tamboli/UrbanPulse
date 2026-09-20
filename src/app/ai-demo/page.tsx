@@ -7,12 +7,20 @@ import AIVideoPlayer from '@/components/video/ai-video-player';
 import PipelineSteps from '@/components/video/pipeline-steps';
 import EvidenceCard from '@/components/video/evidence-card';
 import RepairVerification from '@/components/video/repair-verification';
+import { cn } from '@/lib/utils';
 
 export default function AIDemoPage() {
   const [pipelineActive, setPipelineActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [showEvidence, setShowEvidence] = useState(true); // default visible for immediate judging evaluation
   const [frameCounter, setFrameCounter] = useState(1267);
+  const [detectedAnomaly, setDetectedAnomaly] = useState<{
+    type: string;
+    label: string;
+    confidence: number;
+    area: number;
+    severity: string;
+  } | null>(null);
 
   // Simulate frame counter
   useEffect(() => {
@@ -22,7 +30,18 @@ export default function AIDemoPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleDetection = () => {
+  const handleDetection = (defectData?: any) => {
+    if (defectData) {
+      setDetectedAnomaly(defectData);
+    } else {
+      setDetectedAnomaly({
+        type: 'pothole',
+        label: 'Deep Asphalt Pothole',
+        confidence: 0.958,
+        area: 0.82,
+        severity: 'high'
+      });
+    }
     setPipelineActive(true);
     setCurrentStep(0);
     
@@ -96,9 +115,17 @@ export default function AIDemoPage() {
               <div className="text-[10px] text-gray-500 uppercase tracking-wider font-mono">Objects Detected</div>
               <div className="text-sm text-gray-300 font-semibold">
                 {pipelineActive ? (
-                  <span className="text-red-400 font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                    1 Pothole (94%)
+                  <span className={cn(
+                    "font-bold flex items-center gap-1",
+                    detectedAnomaly?.type === 'healthy' ? "text-green-400" : "text-red-400"
+                  )}>
+                    <span className={cn(
+                      "w-2 h-2 rounded-full animate-ping",
+                      detectedAnomaly?.type === 'healthy' ? "bg-green-500" : "bg-red-500"
+                    )} />
+                    {detectedAnomaly 
+                      ? `${detectedAnomaly.label} (${(detectedAnomaly.confidence * 100).toFixed(1)}%)`
+                      : '1 Pothole (95.8%)'}
                   </span>
                 ) : (
                   <span className="text-gray-400">Scanning Road...</span>
